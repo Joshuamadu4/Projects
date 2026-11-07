@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AmanaCruise / CozyRide — Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#075914; --forest2:#0f7d27; --amber:#e89f30; --mint:#f6faf7;
+    --ink:#14211a; --muted:#5b6b62; --line:#d3e2d8;
+    --card:#ffffff; --shadow:0 1px 2px rgba(7,40,18,.06),0 8px 24px rgba(7,40,18,.07);
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    font-family:'Inter',sans-serif; color:var(--ink);
+    background:
+      radial-gradient(1200px 500px at 80% -8%, rgba(232,159,48,.10), transparent 60%),
+      radial-gradient(1000px 600px at -5% 10%, rgba(15,125,39,.08), transparent 55%),
+      var(--mint);
+    width:1440px; padding:44px 48px 52px;
+  }
+  .doc-head{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:30px}
+  .brand{display:flex; align-items:center; gap:14px}
+  .brand .logo{
+    width:46px; height:46px; border-radius:13px;
+    background:linear-gradient(135deg,var(--forest),var(--forest2));
+    display:flex; align-items:center; justify-content:center; color:#fff;
+    box-shadow:0 6px 16px rgba(7,89,20,.30); flex-shrink:0;
+  }
+  .brand .logo svg{width:26px;height:26px}
+  h1{font-family:'Playfair Display',serif; font-size:30px; font-weight:800; letter-spacing:-.5px; line-height:1.05}
+  .sub{color:var(--muted); font-size:13.5px; margin-top:3px; font-weight:500}
+  .legend{display:flex; gap:18px; align-items:center; font-size:12px; color:var(--muted); font-weight:600}
+  .legend .dot{display:inline-flex; align-items:center; gap:6px}
+  .legend i{width:13px; height:13px; border-radius:4px; display:inline-block}
+
+  /* layer band */
+  .layer{
+    position:relative; background:var(--card); border:1px solid var(--line);
+    border-radius:20px; box-shadow:var(--shadow); margin-bottom:20px; overflow:hidden;
+  }
+  .layer-head{
+    display:flex; align-items:center; gap:11px; padding:13px 22px;
+    background:linear-gradient(90deg, rgba(7,89,20,.045), rgba(7,89,20,0));
+    border-bottom:1px dashed var(--line);
+  }
+  .layer-head .tag{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:500;
+    color:var(--forest); background:rgba(15,125,39,.10); padding:3px 9px; border-radius:7px;
+    letter-spacing:.3px; text-transform:uppercase;
+  }
+  .layer-head h2{font-size:16px; font-weight:700; letter-spacing:-.2px}
+  .layer-head .note{margin-left:auto; font-size:11.5px; color:var(--muted); font-weight:500}
+  .layer-body{padding:18px 22px 20px}
+
+  .row{display:flex; gap:14px; align-items:stretch}
+  .row + .row{margin-top:14px}
+  .col{flex:1; display:flex; flex-direction:column; gap:10px}
+
+  /* group block */
+  .group{
+    border:1px solid var(--line); border-radius:14px; padding:13px 13px 14px;
+    background:linear-gradient(180deg,#fbfdfb,#ffffff); flex:1;
+  }
+  .group > h3{
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px;
+    color:var(--forest); margin-bottom:10px; display:flex; align-items:center; gap:7px;
+  }
+  .group > h3 .ic{
+    width:20px; height:20px; border-radius:6px; background:rgba(7,89,20,.10);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .group > h3 .ic svg{width:12px; height:12px; stroke:var(--forest)}
+
+  .chips{display:flex; flex-wrap:wrap; gap:7px}
+  .chip{
+    font-size:11.5px; font-weight:600; padding:6px 10px; border-radius:9px;
+    background:#fff; border:1px solid var(--line); color:var(--ink); white-space:nowrap;
+  }
+  .chip.mono{font-family:'JetBrains Mono',monospace; font-size:10.5px; font-weight:500}
+  .chip.key{background:rgba(7,89,20,.07); border-color:rgba(7,89,20,.18); color:var(--forest)}
+  .chip.amber{background:rgba(232,159,48,.12); border-color:rgba(232,159,48,.34); color:#9a6712}
+  .chip.muted{color:var(--muted)}
+  .chip small{font-weight:500; color:var(--muted); margin-left:5px; font-size:10px}
+
+  /* node card (clients / external) */
+  .node{
+    border:1px solid var(--line); border-radius:13px; padding:13px 15px; background:#fff;
+    flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;
+  }
+  .node .nh{display:flex; align-items:center; gap:9px}
+  .node .nbadge{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .node .nbadge svg{width:17px;height:17px}
+  .node .nt{font-size:13.5px; font-weight:700; line-height:1.15}
+  .node .nd{font-size:11px; color:var(--muted); font-weight:500; line-height:1.45}
+  .node .nmeta{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--forest2); margin-top:2px}
+
+  /* connector */
+  .flow{display:flex; align-items:center; justify-content:center; gap:14px; padding:7px 0 11px}
+  .flow .pill{
+    font-size:11px; font-weight:600; color:var(--muted);
+    background:#fff; border:1px solid var(--line); padding:5px 13px; border-radius:20px;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .flow .pill b{color:var(--forest); font-weight:700}
+  .arrowline{flex:1; height:0; border-top:2px dashed var(--line); position:relative; max-width:180px}
+  .arrowline::after{content:'▼'; position:absolute; right:-2px; top:-9px; color:var(--line); font-size:11px}
+
+  .bridge{
+    margin-top:13px; border:1px dashed rgba(232,159,48,.5); border-radius:12px;
+    background:rgba(232,159,48,.06); padding:11px 14px; display:flex; gap:14px; align-items:center; flex-wrap:wrap;
+  }
+  .bridge .bl{font-size:11px; font-weight:700; color:#9a6712; text-transform:uppercase; letter-spacing:.5px; flex-shrink:0}
+
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  .threecol{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px}
+  .fourcol{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+
+  .foot{display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:11px; color:var(--muted); font-weight:500}
+  .foot .stack{display:flex; gap:8px; flex-wrap:wrap}
+  .foot .stack span{background:#fff; border:1px solid var(--line); padding:4px 9px; border-radius:7px; font-weight:600}
+</style>
+</head>
+<body>
+
+  <div class="doc-head">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14M5 17a2 2 0 0 1-2-2v-1a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v1a2 2 0 0 1-2 2M7 17v2M17 17v2"/><path d="M6 10l1.5-3.5A2 2 0 0 1 9.3 5h5.4a2 2 0 0 1 1.8 1.5L18 10"/></svg>
+      </div>
+      <div>
+        <h1>AmanaCruise / CozyRide — System Architecture</h1>
+        <div class="sub">Intercity ride-sharing for Nigerian corridors · Client-only SPA + Supabase · Android WebView wrapper</div>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="dot"><i style="background:linear-gradient(135deg,#075914,#0f7d27)"></i>Owned code</span>
+      <span class="dot"><i style="background:#e89f30"></i>3rd-party service</span>
+      <span class="dot"><i style="background:#fff;border:1px solid #d3e2d8"></i>Data / RPC</span>
+    </div>
+  </div>
+
+  <!-- ============ LAYER 1: CLIENTS ============ -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="tag">Layer 1</span>
+      <h2>Clients</h2>
+      <span class="note">Everything loads <b style="color:var(--forest)">https://amanacruise.com</b></span>
+    </div>
+    <div class="layer-body">
+      <div class="row">
+        <div class="node">
+          <div class="nh">
+            <div class="nbadge" style="background:rgba(7,89,20,.10)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#075914" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M11 18h2"/></svg>
+            </div>
+            <div>
+              <div class="nt">Android App — <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--forest2)">com.amanacruise.app</span></div>
+              <div class="nd">Kotlin + Jetpack Compose WebView wrapper · FCM push · APK self-update via <span class="nmeta" style="display:inline">version.json</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="node">
+          <div class="nh">
+            <div class="nbadge" style="background:rgba(7,89,20,.10)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#075914" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+            </div>
+            <div>
+              <div class="nt">Web Browser</div>
+              <div class="nd">Desktop / mobile browsers loading the SPA directly · PWA install guide</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bridge">
+        <span class="bl">JS ⇄ Native bridge</span>
+        <span class="chip mono">window.Android.saveAuth(userId, jwt)</span>
+        <span class="chip mono">window.Android.logout()</span>
+        <span class="chip mono">window.receiveFCMToken(token)</span>
+        <span class="chip muted">Only amanacruise.com loads in-WebView — every other link → external app (security boundary)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <span class="arrowline"></span>
+    <span class="pill"><b>HTTPS</b> · static SPA served from Vercel</span>
+    <span class="arrowline"></span>
+  </div>
+
+  <!-- ============ LAYER 2: FRONTEND SPA ============ -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="tag">Layer 2</span>
+      <h2>Frontend SPA</h2>
+      <span class="note">Vite · React · TypeScript · shadcn/ui · Tailwind · React Query — <i style="font-style:normal;color:var(--forest)">Lovable-synced</i></span>
+    </div>
+    <div class="layer-body">
+      <div class="row">
+        <!-- providers -->
+        <div class="group" style="flex:.92">
+          <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/></svg></span>Provider stack — <span style="font-family:'JetBrains Mono',monospace;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted)">App.tsx</span></h3>
+          <div class="chips" style="flex-direction:column;align-items:stretch;gap:6px">
+            <span class="chip">QueryClientProvider <small>TanStack Query</small></span>
+            <span class="chip">ThemeProvider <small>light / dark · localStorage</small></span>
+            <span class="chip">BrowserRouter <small>React Router v6</small></span>
+            <span class="chip key">AuthProvider <small>user · session · profile · isAdmin</small></span>
+            <span class="chip">NotificationDialogProvider <small>modal confirms</small></span>
+            <span class="chip muted">Toaster · Sonner · WhatsApp FAB · GetAppBanner</span>
+          </div>
+        </div>
+        <!-- pages -->
+        <div class="group" style="flex:1.55">
+          <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>Pages &amp; route guards <span style="margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted)">src/pages/ · DriverGuard gates passenger routes</span></h3>
+          <div class="twocol">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Public</div>
+              <div class="chips"><span class="chip">Index</span><span class="chip">Login / Signup</span><span class="chip">Forgot / Reset</span><span class="chip">RouteSafety</span><span class="chip">Download</span><span class="chip muted">Privacy · Refund · AccountDeletion</span></div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:11px 0 6px">Passenger <small style="font-weight:500;text-transform:none">· DriverGuard</small></div>
+              <div class="chips"><span class="chip">SearchResults</span><span class="chip">MyBookings</span><span class="chip">Profile</span></div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Driver <small style="font-weight:500;text-transform:none">· is_driver</small></div>
+              <div class="chips"><span class="chip">DriverDashboard</span><span class="chip">MyEarnings</span></div>
+              <div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.5px;margin:11px 0 6px">Admin <small style="font-weight:500;text-transform:none;color:var(--muted)">· isAdmin gate</small></div>
+              <div class="chips"><span class="chip amber">AdminDashboard</span><span class="chip amber">ArchivedRides</span><span class="chip amber">CustomerMessaging</span><span class="chip amber">CustomerProfile</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- hooks -->
+        <div class="group" style="flex:1.6">
+          <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M6 3v12a4 4 0 0 0 8 0V7a2 2 0 1 1 4 0v2"/></svg></span>Data hooks <span style="margin-left:auto;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted)">src/hooks/ · React Query + Supabase</span></h3>
+          <div class="chips">
+            <span class="chip key">useBookings <small>seat-pool · create / status</small></span>
+            <span class="chip">useAdminOverview <small>KPIs</small></span>
+            <span class="chip">useReservations</span>
+            <span class="chip">useRideAlerts</span>
+            <span class="chip">usePlatformStats</span>
+            <span class="chip">useTestimonials</span>
+            <span class="chip">useUserRatings</span>
+            <span class="chip muted">useNotificationDialog · use-toast · use-mobile</span>
+          </div>
+          <div style="margin-top:11px;padding-top:11px;border-top:1px dashed var(--line);font-size:11px;color:var(--muted);line-height:1.55">
+            <b style="color:var(--ink)">Booking correctness layer</b> lives client-side in <span class="chip mono" style="padding:2px 7px">useBookings.ts</span> — shared seat pools for multi-stop rides, atomic per-seat claims, commission split, best-effort email/push side effects.
+          </div>
+        </div>
+        <!-- access patterns -->
+        <div class="group" style="flex:1">
+          <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2M4 7v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7M4 7h16M9 12h6"/></svg></span>Server access</h3>
+          <div class="chips" style="flex-direction:column;align-items:stretch;gap:7px">
+            <span class="chip">Typed <b style="color:var(--forest)">supabase</b> client <small>most reads / writes</small></span>
+            <span class="chip key">apiClient → <span style="font-family:'JetBrains Mono',monospace">invokeAction()</span></span>
+          </div>
+          <div style="font-size:10.5px;color:var(--muted);margin:8px 0 6px;font-weight:600">Brokered actions → <span style="font-family:'JetBrains Mono',monospace">check-perm</span></div>
+          <div class="chips">
+            <span class="chip mono">check-role</span>
+            <span class="chip mono">public-profiles</span>
+            <span class="chip mono">is-driver</span>
+          </div>
+          <div style="margin-top:10px;font-size:10.5px;color:var(--muted);line-height:1.5"><b style="color:var(--ink)">i18n</b> · i18next — English + Hausa, localStorage-detected</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <span class="arrowline"></span>
+    <span class="pill">JWT-authed <b>supabase-js</b> · <b>functions.invoke()</b> · RPC</span>
+    <span class="arrowline"></span>
+  </div>
+
+  <!-- ============ LAYER 3: SUPABASE BACKEND ============ -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="tag">Layer 3</span>
+      <h2>Supabase Backend</h2>
+      <span class="note">Project <b style="color:var(--forest)">nvyywvkurstrsdvlbass</b> · Postgres + RLS · 23 Deno Edge Functions</span>
+    </div>
+    <div class="layer-body">
+
+      <!-- edge functions -->
+      <div style="font-size:11px;font-weight:700;color:var(--forest);text-transform:uppercase;letter-spacing:.6px;margin-bottom:11px">Edge Functions <span style="font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0">— Deno · per-function verify_jwt in config.toml</span></div>
+      <div class="fourcol">
+        <div class="group">
+          <h3 style="font-size:10.5px">Auth / OTP</h3>
+          <div class="chips" style="flex-direction:column;align-items:stretch;gap:6px">
+            <span class="chip mono">send-auth-email</span>
+            <span class="chip mono">verify-email</span>
+            <span class="chip mono">verify-reset-token</span>
+            <span class="chip mono">send-admin-otp</span>
+            <span class="chip mono">verify-admin-otp <small>magic-link 2FA</small></span>
+          </div>
+        </div>
+        <div class="group">
+          <h3 style="font-size:10.5px">Email flows <span style="margin-left:auto;font-weight:500;text-transform:none;color:var(--amber)">→ Resend</span></h3>
+          <div class="chips" style="flex-direction:column;align-items:stretch;gap:6px">
+            <span class="chip mono">send-booking-email</span>
+            <span class="chip mono">send-cancellation-email</span>
+            <span class="chip mono">send-reservation-email</span>
+            <span class="chip mono">send-endorsement-email</span>
+            <span class="chip mono">notify-ride-alerts</span>
+            <span class="chip mono">notify-admin</span>
+          </div>
+        </div>
+        <div class="group">
+          <h3 style="font-size:10.5px">SMS / Push</h3>
+          <div class="chips" style="flex-direction:column;align-items:stretch;gap:6px">
+            <span class="chip mono">send-sms <small>→ Twilio</small></span>
+            <span class="chip mono">twilio-status <small>webhook</small></span>
+            <span class="chip mono">fcm-worker <small>→ FCM</small></span>
+            <span class="chip mono">save-device-token</span>
+          </div>
+        </div>
+        <div class="group">
+          <h3 style="font-size:10.5px">Permission / Admin / Media</h3>
+          <div class="chips" style="flex-direction:column;align-items:stretch;gap:6px">
+            <span class="chip mono key">check-perm <small>action broker</small></span>
+            <span class="chip mono">admin-upload-doc</span>
+            <span class="chip mono">delete-user <small>cascade</small></span>
+            <span class="chip mono">apply-referral</span>
+            <span class="chip mono">media <small>doc proxy</small></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- database -->
+      <div style="font-size:11px;font-weight:700;color:var(--forest);text-transform:uppercase;letter-spacing:.6px;margin:18px 0 11px">PostgreSQL <span style="font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0">— RLS-hardened tables · SECURITY DEFINER RPCs pin search_path</span></div>
+      <div class="row">
+        <div class="group">
+          <h3 style="font-size:10.5px">Identity / Roles</h3>
+          <div class="chips"><span class="chip">profiles</span><span class="chip">user_roles</span><span class="chip">verification_documents</span></div>
+        </div>
+        <div class="group">
+          <h3 style="font-size:10.5px">Rides / Booking</h3>
+          <div class="chips"><span class="chip key">rides</span><span class="chip key">bookings</span><span class="chip key">ride_seats</span><span class="chip">ride_alerts</span></div>
+        </div>
+        <div class="group">
+          <h3 style="font-size:10.5px">Trust / Credits</h3>
+          <div class="chips"><span class="chip">ratings</span><span class="chip">endorsements</span><span class="chip">referrals</span><span class="chip">credit_transactions</span></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="group">
+          <h3 style="font-size:10.5px">Messaging / Notifications</h3>
+          <div class="chips"><span class="chip">messages</span><span class="chip">device_tokens</span><span class="chip">notification_queue</span><span class="chip">notification_logs</span></div>
+        </div>
+        <div class="group">
+          <h3 style="font-size:10.5px">Settings / Tokens</h3>
+          <div class="chips"><span class="chip">platform_settings</span><span class="chip">customers</span><span class="chip">route_requests</span><span class="chip muted">admin_otps · *_verification_tokens · *_reset_tokens</span></div>
+        </div>
+        <div class="group">
+          <h3 style="font-size:10.5px">Key RPCs</h3>
+          <div class="chips"><span class="chip mono">has_role</span><span class="chip mono">get_public_profiles</span><span class="chip mono">spend_credits</span><span class="chip mono">generate_ride_seats</span><span class="chip mono">get_platform_stats</span><span class="chip mono">get_testimonials</span></div>
+        </div>
+      </div>
+
+      <!-- cron + storage -->
+      <div class="row" style="margin-top:14px">
+        <div class="group" style="background:linear-gradient(180deg,rgba(232,159,48,.06),#fff);border-color:rgba(232,159,48,.3)">
+          <h3 style="font-size:10.5px;color:#9a6712"><span class="ic" style="background:rgba(232,159,48,.16)"><svg viewBox="0 0 24 24" fill="none" stroke="#9a6712" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>Scheduled workers <small style="font-weight:500;text-transform:none">· pg_cron + pg_net · x-worker-secret</small></h3>
+          <div class="chips">
+            <span class="chip amber">expire-unpaid-bookings <small>hourly</small></span>
+            <span class="chip amber">ride-reminder-worker <small>30m / late start / late end</small></span>
+            <span class="chip amber">archive-stale-rides</span>
+            <span class="chip amber">purge-old-notifications <small>daily 03:00</small></span>
+          </div>
+        </div>
+        <div class="group" style="flex:.6">
+          <h3 style="font-size:10.5px">Supabase platform</h3>
+          <div class="chips"><span class="chip">Auth <small>JWT · sessions</small></span><span class="chip">Storage <small>verification-docs</small></span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="flow">
+    <span class="arrowline"></span>
+    <span class="pill">Outbound to <b>3rd-party</b> providers</span>
+    <span class="arrowline"></span>
+  </div>
+
+  <!-- ============ LAYER 4: EXTERNAL ============ -->
+  <div class="layer">
+    <div class="layer-head">
+      <span class="tag">Layer 4</span>
+      <h2>External Services</h2>
+      <span class="note">Secrets via <span style="font-family:'JetBrains Mono',monospace">Deno.env.get</span> in edge functions</span>
+    </div>
+    <div class="layer-body">
+      <div class="fourcol">
+        <div class="node" style="border-color:rgba(232,159,48,.4)">
+          <div class="nh">
+            <div class="nbadge" style="background:rgba(232,159,48,.15)"><svg viewBox="0 0 24 24" fill="none" stroke="#9a6712" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
+            <div class="nt">Resend</div>
+          </div>
+          <div class="nd">All transactional email — <span class="nmeta" style="display:inline">noreply@amanacruise.com</span></div>
+        </div>
+        <div class="node" style="border-color:rgba(232,159,48,.4)">
+          <div class="nh">
+            <div class="nbadge" style="background:rgba(232,159,48,.15)"><svg viewBox="0 0 24 24" fill="none" stroke="#9a6712" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div class="nt">Twilio</div>
+          </div>
+          <div class="nd">Admin-sent SMS to customers · E.164 · HMAC-verified status webhook</div>
+        </div>
+        <div class="node" style="border-color:rgba(232,159,48,.4)">
+          <div class="nh">
+            <div class="nbadge" style="background:rgba(232,159,48,.15)"><svg viewBox="0 0 24 24" fill="none" stroke="#9a6712" stroke-width="2" stroke-linecap="round"><path d="M12 2 3 7l9 5 9-5-9-5zM3 12l9 5 9-5M3 17l9 5 9-5"/></svg></div>
+            <div class="nt">Firebase FCM</div>
+          </div>
+          <div class="nd">Push to device_tokens · OAuth2 service account · multi-device · 3× retry</div>
+        </div>
+        <div class="node" style="border-color:rgba(232,159,48,.4)">
+          <div class="nh">
+            <div class="nbadge" style="background:rgba(232,159,48,.15)"><svg viewBox="0 0 24 24" fill="none" stroke="#9a6712" stroke-width="2" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+            <div class="nt">Vercel</div>
+          </div>
+          <div class="nd">Static SPA hosting + APK / version.json headers for the web /download path</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="stack">
+      <span>Vite + React + TS</span><span>shadcn/ui + Tailwind</span><span>Supabase (Postgres · Deno)</span><span>Kotlin + Compose WebView</span>
+    </div>
+    <div>Generated for Joshua Madu · architecture snapshot · 2026-06-29</div>
+  </div>
+
+</body>
+</html>

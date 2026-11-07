@@ -1,0 +1,4 @@
+Name,Metric Date,Service Name,Metric Type,Value,Unit,Source,Account,SLA Target %
+EXAMPLE DELETE ME - Internet availability July,2026-07-31,Internet Access,Availability %,99.6,%,Monitoring,Federal Ministry of Love Affairs,99.5
+EXAMPLE DELETE ME - Cloud hosting availability July,2026-07-31,Cloud Hosting,Availability %,99.9,%,Monitoring,Ahmadu Bello University Teaching Hospital,99.5
+EXAMPLE DELETE ME - Internet availability July,2026-07-31,Internet Access,Availability %,98.7,%,Monitoring,Ahmadu Bello University Teaching Hospital,99.5
